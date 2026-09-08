@@ -1,8 +1,9 @@
 <!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PSU NIVERSEQ · the chaos overworld — MAHĀKĀLA, the first hero</title><style>
+@layer base,overlay;:root{color-scheme:dark;--gold:oklch(.85 .16 85);--cyan:oklch(.8 .13 200);--pink:oklch(.68 .2 350)}
 body{margin:0;background:#0b0f19;color:#d8e8f0;font-family:ui-monospace,monospace;overflow:hidden}
 canvas{width:100vw;height:100vh;display:block;cursor:crosshair}
-#banner{position:fixed;top:0;left:0;right:0;text-align:center;padding:10px;font-size:11px;letter-spacing:4px;color:#ffd700;background:linear-gradient(rgba(11,15,25,.95),rgba(11,15,25,.3));z-index:7;pointer-events:none}
-#banner b{color:#00f0ff}
+#banner{position:fixed;top:0;left:0;right:0;text-align:center;padding:10px;font-size:11px;letter-spacing:4px;color:var(--gold);background:linear-gradient(rgba(11,15,25,.95),rgba(11,15,25,.3));z-index:7;pointer-events:none}
+#banner b{color:var(--cyan)}
 #hud{position:fixed;top:52px;right:14px;z-index:9;background:rgba(11,15,25,.88);border:1px solid rgba(0,240,255,.4);border-radius:10px;padding:10px 14px;font-size:.64rem;letter-spacing:1px;min-width:200px;backdrop-filter:blur(8px)}
 #hud b{color:#ffd700}
 #spells{position:fixed;top:188px;right:14px;z-index:9;background:rgba(11,15,25,.88);border:1px solid rgba(255,0,127,.4);border-radius:10px;padding:8px 10px;font-size:.58rem;width:200px;backdrop-filter:blur(8px)}
@@ -25,6 +26,7 @@ canvas{width:100vw;height:100vh;display:block;cursor:crosshair}
 #overlay button:hover{background:rgba(0,240,255,.25)}
 #boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0f19;color:#00f0ff;font-family:ui-monospace,monospace;cursor:pointer;z-index:20;letter-spacing:3px;font-size:15px;text-align:center;flex-direction:column}
 #boot .s{font-size:10px;color:#5a7a8a;margin-top:10px;letter-spacing:1px}
+@layer overlay{body:has(#overlay[style*="flex"]) #hud,body:has(#overlay[style*="flex"]) #spells,body:has(#overlay[style*="flex"]) #log{filter:blur(3px);opacity:.35}}
 </style></head><body><canvas id=c></canvas>
 <div id=banner>⟦ PSU NIVERSEQ · <b>the chaos overworld</b> · the first hero: MAHĀKĀLA ⟧</div>
 <div id=bossname></div><div id=bossbar><i id=bossfill></i></div>
@@ -85,7 +87,7 @@ function cannot(n){for(const e of ttree.edges){if(e[1]===n.i&&!alloc[e[0]])retur
 const ITEMS=[{n:'Icosahedron Relic',stat:'magnet',v:10,r:0},{n:'Golden Ratio Matrix',stat:'swift',v:1,r:2},{n:'Crown of the Ratna',stat:'stomp',v:2,r:1},{n:'Vajra Arm',stat:'arms',v:2,r:1},{n:'Garland of 108',stat:'stomp',v:1,r:0},{n:'Hollow Star Sigil',stat:'jump',v:1,r:2}];
 const RAR=['#00f0ff','#ff007f','#ffd700'];
 const eq={head:null,arms:null,garland:null};
-function applyStats(){document.getElementById('eq').textContent=['head','arms','garland'].map(s2=>eq[s2]?eq[s2].n:'—').join(' · ')}
+function applyStats(){elEq.textContent=['head','arms','garland'].map(s2=>eq[s2]?eq[s2].n:'—').join(' · ')}
 function dropItem(k){if(R()>0.26+st.arms*.05)return;const it={...ITEMS[(R()*ITEMS.length)|0],slot:['head','arms','garland'][(R()*3)|0]};
   const cur=eq[it.slot];if(!cur||cur.v<it.v){eq[it.slot]=it;applyStats();say(heroName,'equipped the '+it.n+' ('+it.stat+'+'+it.v+')')}}
 const SPELLS=[
@@ -96,8 +98,11 @@ const SPELLS=[
 ];
 let castSpeed=1,tentT=0;
 function spellsTick(dt){for(const sp of SPELLS){sp.t-=dt*castSpeed;if(sp.on&&sp.t<=0){sp.fire();sp.t=sp.cd}}}
-function spellsUI(){const el=document.getElementById('spells');el.innerHTML='<div style="color:#ff9ad5;letter-spacing:2px">spells · [ ] pace <b id=cs>×1</b></div>'+SPELLS.map((sp,i)=>'<div class="sp '+(sp.on?'':'off')+'" data-i="'+i+'"><b>'+sp.n+'</b><div class="bar"><i style="width:'+Math.max(0,Math.min(100,sp.cd>0?(sp.cd-sp.t)/sp.cd*100:100))+'%"></i></div></div>').join('')
-  el.querySelectorAll('.sp').forEach(div=>div.onclick=()=>{const i=+div.dataset.i;SPELLS[i].on=!SPELLS[i].on;if(SPELLS[i].on)SPELLS[i].t=SPELLS[i].cd*.3;spellsUI()})}
+const spellEls=[];
+function spellsUI(){const el=document.getElementById('spells');el.innerHTML='<div style="color:#ff9ad5;letter-spacing:2px">spells · [ ] pace <b id=cs>×1</b></div>'+SPELLS.map((sp,i)=>'<div class="sp '+(sp.on?'':'off')+'" data-i="'+i+'"><b>'+sp.n+'</b><div class="bar"><i></i></div></div>').join('')
+  el.querySelectorAll('.sp').forEach((div,i)=>{div.onclick=()=>{SPELLS[i].on=!SPELLS[i].on;if(SPELLS[i].on)SPELLS[i].t=SPELLS[i].cd*.3;spellsTint()};spellEls[i]=div.querySelector('.bar i')});spellsTint()}
+function spellsTint(){for(let i=0;i<SPELLS.length;i++){const sp=SPELLS[i],el=spellEls[i];if(!el)continue;const w=Math.round(Math.max(0,Math.min(100,sp.cd>0?(sp.cd-sp.t)/sp.cd*100:100)));if(w!==el._w){el._w=w;el.style.width=w+'%'}const on=sp.on?'':'off';if(el._on!==on){el._on=on;el.parentElement.parentElement.className='sp '+on}}}
+spellsUI()
 // ── the lore — deep, on the breath of birth (elder scrolls, the origin)
 function sacredName(){return {n:PREF[(R()*PREF.length)|0]+ROOT[(R()*ROOT.length)|0],t:TITL[(R()*TITL.length)|0]}}
 function buildLore(name,root){
@@ -170,7 +175,7 @@ function bossUpdate(dt){
   if(!moving&&!treeOpen){zen=Math.min(1,zen+dt*.5)}else{zen=Math.max(0,zen-dt*.4)}
   if(zen>=1){zen=0;zenStun=3;say(' ','ZEN FULL — the deity is stunned, the still point holds')}
   if(zenStun>0){zenStun-=dt}
-  document.getElementById('zenline').textContent='ZEN '+Math.round(zen*100)+'%'+(zenStun>0?' · STUN '+zenStun.toFixed(1):'');
+  const z='ZEN '+Math.round(zen*100)+'%'+(zenStun>0?' · STUN '+zenStun.toFixed(1):'');if(z!==hud.zen){hud.zen=z;elZen.textContent=z}
   // movement — the deity drifts toward the hero
   boss.x+=(px-boss.x)*.004*dt*60;boss.y=Math.max(90,Math.min(260,boss.y+(py-boss.y)*.002*dt*60));
   // patterns
@@ -185,7 +190,7 @@ function bossUpdate(dt){
   for(const s of bossShots){s.x+=s.vx*dt;s.y+=s.vy*dt;
     if(Math.hypot(px-s.x,py-s.y)<22){s.dead=true;if(zenStun<=0){lives--;say(' ','the deity strikes — '+lives+' lives remain');if(lives<=0)gameOver()}}
     if(s.y>GROUND+40||s.x<-40||s.x>W2+40)s.dead=true}
-  bossShots=bossShots.filter(s=>!s.dead);
+  for(let i=0;i<bossShots.length;){if(bossShots[i].dead){bossShots[i]=bossShots[bossShots.length-1];bossShots.pop()}else i++}
   // stomp the deity — damage only during the stun window
   if(!onG&&vy>0&&Math.abs(px-boss.x)<40&&py+30>boss.y&&py<boss.y+40){
     if(zenStun>0){boss.hp-=st.stomp*8;vy=-500;say(' ','the still point strikes — the deity reels')}
@@ -265,12 +270,10 @@ function render(){
   X.fillStyle='#ff007f';X.fillRect(px-10,py+26,20,3)
   if(eq.head){X.fillStyle=RAR[eq.head.r];X.fillRect(px-4,py-6,8,3)}
   if(eq.garland){X.fillStyle='#ff9ad5';X.beginPath();X.arc(px,py+30,5,0,TAU);X.stroke()}
-  for(const b of bubbles){if(b.t<=0){bubbles.splice(bubbles.indexOf(b),1);continue}b.t-=.016
+  for(let i=0;i<bubbles.length;){const b=bubbles[i];if(b.t<=0){bubbles[i]=bubbles[bubbles.length-1];bubbles.pop();continue}b.t-=.016;i++
     X.fillStyle='rgba(255,215,0,.9)';X.font='10px ui-monospace';X.fillText(b.text,b.x-60,b.y-b.t*8)}
   bossRender()
-  document.getElementById('st').textContent=stomps;document.getElementById('sp').textContent=splits
-  document.getElementById('go').textContent=gold;document.getElementById('tp').textContent=tp
-  document.getElementById('hn').textContent=heroName;document.getElementById('lv').textContent=lives
+  hudSync()
   if(treeOpen){X.fillStyle='rgba(11,15,25,.94)';X.fillRect(0,0,W2,H2)
     X.font='11px ui-monospace';X.fillStyle='#ffd700';X.fillText('the talent tree — '+tp+' points · click a node (the hero deepens)',W2/2-200,90)
     for(const e of ttree.edges){const a=ttree.nodes[e[0]],b=ttree.nodes[e[1]]
@@ -282,7 +285,7 @@ function render(){
       X.strokeStyle='#ff9ad5';X.lineWidth=1;X.stroke()
       X.fillStyle='#e8f0f8';X.font='9px ui-monospace';X.fillText(n.stat[0].toUpperCase(),x2-3,y2+3)
       X.fillStyle='#9ab';X.font='9px ui-monospace';X.textAlign='center';X.fillText('+'+n.amt+' '+n.stat,x2,y2+30);X.textAlign='left'}}
-  spellsUI()
+  spellsTint()
 }
 function loop(){render();requestAnimationFrame(loop)}
 let keys={},lastT=performance.now();
@@ -303,6 +306,14 @@ c.addEventListener('click',(ev)=>{if(!treeOpen)return;const mx=ev.clientX,my=ev.
   for(const n of ttree.nodes){const x2=W2/2-120+n.gx*110,y2=150+n.gy*90
     if(Math.hypot(mx-x2,my-y2)<24&&!alloc[n.i]&&!cannot(n)&&tp>0){alloc[n.i]=1;applyNode(n.i);tp--;break}}})
 let playerName=heroName;
+const elSt=document.getElementById('st'),elSp=document.getElementById('sp'),elGo=document.getElementById('go'),elTp=document.getElementById('tp'),elHn=document.getElementById('hn'),elLv=document.getElementById('lv'),elEq=document.getElementById('eq'),elZen=document.getElementById('zenline');
+const hud={st:-1,sp:-1,go:-1,tp:-1,lv:-1,hn:'',zen:''};
+function hudSync(){if(stomps!==hud.st){hud.st=stomps;elSt.textContent=stomps}
+if(splits!==hud.sp){hud.sp=splits;elSp.textContent=splits}
+if(gold!==hud.go){hud.go=gold;elGo.textContent=gold}
+if(tp!==hud.tp){hud.tp=tp;elTp.textContent=tp}
+if(lives!==hud.lv){hud.lv=lives;elLv.textContent=lives}
+if(heroName!==hud.hn){hud.hn=heroName;elHn.textContent=heroName}}
 document.getElementById('joinbtn').addEventListener('click',()=>{const v=document.getElementById('joinin').value.trim();if(v)heroName=v;playerName=heroName
   try{localStorage.setItem('psuniverseq-name',heroName)}catch(e){}
   const s2=sacredName();heroRoot=s2.n.replace(/[^A-Z]/g,'').slice(-4)||'KALA';
