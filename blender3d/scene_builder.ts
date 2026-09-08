@@ -71,12 +71,29 @@ for i, h in enumerate(heights):
     bpy.context.object.scale.z = h
     bpy.context.object.data.materials.append(mat(MATS[int(i*7 + h*3) % len(MATS)], f'm{i}'))
 
-# light + camera
+# light + the dawn world (EEVEE needs a sky, not a void)
 bpy.ops.object.light_add(type='SUN', location=(size, size, size))
 bpy.data.objects['Sun'].data.energy = 3
+bpy.data.objects['Sun'].rotation_euler = (0.8, 0, 0.4)
+w = bpy.data.worlds.new('dawn')
+bpy.context.scene.world = w
+w.use_nodes = True
+bg = w.node_tree.nodes.get('Background')
+if bg:
+    bg.inputs[0].default_value = (0.02, 0.04, 0.09, 1)
+    bg.inputs[1].default_value = 1.0
+
+# camera: aim at the board center — a fixed pose misses the field
+bpy.ops.object.empty_add(type='PLAIN_AXES', location=(size/2-0.5, size/2-0.5, 1))
+target = bpy.context.object
 bpy.ops.object.camera_add(location=(size*0.72, size*0.9, size*0.95))
-bpy.data.objects['Camera'].rotation_euler = (1.11, 0, 0.75)
-bpy.context.scene.camera = bpy.data.objects['Camera']
+cam = bpy.context.object
+cam.constraints.new(type='TRACK_TO')
+cam.constraints[0].target = target
+cam.constraints[0].track_axis = 'TRACK_NEGATIVE_Z'
+cam.constraints[0].up_axis = 'UP_Y'
+bpy.context.scene.camera = cam
+bpy.context.view_layer.update()
 
 out = os.environ.get('ADMISSIBILITY_OUTPUT', '${outPng}')
 os.makedirs(os.path.dirname(out), exist_ok=True)
