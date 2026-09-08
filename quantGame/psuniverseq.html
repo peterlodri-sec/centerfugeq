@@ -1,0 +1,331 @@
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PSU NIVERSEQ · the chaos overworld — MAHĀKĀLA, the first hero</title><style>
+body{margin:0;background:#0b0f19;color:#d8e8f0;font-family:ui-monospace,monospace;overflow:hidden}
+canvas{width:100vw;height:100vh;display:block;cursor:crosshair}
+#banner{position:fixed;top:0;left:0;right:0;text-align:center;padding:10px;font-size:11px;letter-spacing:4px;color:#ffd700;background:linear-gradient(rgba(11,15,25,.95),rgba(11,15,25,.3));z-index:7;pointer-events:none}
+#banner b{color:#00f0ff}
+#hud{position:fixed;top:52px;right:14px;z-index:9;background:rgba(11,15,25,.88);border:1px solid rgba(0,240,255,.4);border-radius:10px;padding:10px 14px;font-size:.64rem;letter-spacing:1px;min-width:200px;backdrop-filter:blur(8px)}
+#hud b{color:#ffd700}
+#spells{position:fixed;top:188px;right:14px;z-index:9;background:rgba(11,15,25,.88);border:1px solid rgba(255,0,127,.4);border-radius:10px;padding:8px 10px;font-size:.58rem;width:200px;backdrop-filter:blur(8px)}
+#spells .sp{display:flex;align-items:center;gap:6px;margin-bottom:5px;cursor:pointer}
+#spells .sp .bar{flex:1;height:6px;background:#0d1322;border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+#spells .sp .bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff007f,#ffd700)}
+#spells .sp b{color:#e8f0f8;font-weight:normal;min-width:58px}
+#spells .off b{color:#4a5a6a}
+#log{position:fixed;left:14px;bottom:14px;width:300px;max-height:130px;overflow:hidden;background:rgba(11,15,25,.82);border:1px solid rgba(255,0,127,.35);border-radius:10px;padding:8px 10px;font-size:.6rem;color:#ff9ad5;z-index:8;line-height:1.6}
+#lore{position:fixed;left:14px;top:52px;width:min(420px,40vw);background:rgba(11,15,25,.9);border:1px solid rgba(255,215,0,.4);border-radius:12px;padding:12px 14px;font-size:.66rem;color:#e8d8c8;z-index:9;line-height:1.8;letter-spacing:.5px;backdrop-filter:blur(8px)}
+#lore b{color:#ffd700;letter-spacing:2px}
+#bossbar{position:fixed;top:44px;left:50%;transform:translateX(-50%);width:min(520px,70vw);height:14px;background:rgba(11,15,25,.9);border:1px solid rgba(255,0,127,.6);border-radius:8px;z-index:9;overflow:hidden;display:none}
+#bossbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff007f,#ffd700)}
+#bossname{position:fixed;top:22px;left:50%;transform:translateX(-50%);color:#ff007f;font-size:11px;letter-spacing:4px;z-index:9;display:none;text-shadow:0 0 12px #ff007f}
+#overlay{position:fixed;inset:0;background:rgba(11,15,25,.97);z-index:18;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center}
+#overlay .t{color:#ffd700;font-size:13px;letter-spacing:3px}
+#overlay .s{color:#5a7a8a;font-size:10px;letter-spacing:1px;max-width:520px;line-height:1.8}
+#overlay .opts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#overlay button{background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.5);border-radius:9px;color:#00f0ff;font:700 .7rem ui-monospace,monospace;padding:10px 16px;cursor:pointer;letter-spacing:1px}
+#overlay button:hover{background:rgba(0,240,255,.25)}
+#boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0f19;color:#00f0ff;font-family:ui-monospace,monospace;cursor:pointer;z-index:20;letter-spacing:3px;font-size:15px;text-align:center;flex-direction:column}
+#boot .s{font-size:10px;color:#5a7a8a;margin-top:10px;letter-spacing:1px}
+</style></head><body><canvas id=c></canvas>
+<div id=banner>⟦ PSU NIVERSEQ · <b>the chaos overworld</b> · the first hero: MAHĀKĀLA ⟧</div>
+<div id=bossname></div><div id=bossbar><i id=bossfill></i></div>
+<div id=hud>lives <b id=lv>3</b> · stomps <b id=st>0</b> · splits <b id=sp>0</b> · sparks <b id=go>0</b> · talent <b id=tp>0</b><br><b id=hn>MAHĀKĀLA</b> <span id=nm style="color:#5a7a8a">· N = new sacred name</span><br><span id=eq style="color:#00f0ff;font-size:.58rem">no equipment yet</span><br><span id=zenline style="color:#00ff66">ZEN 0%</span><br><span style="color:#5a7a8a">wasd · space jump · stomp · T talents · N rename · s say · r reset</span></div>
+<div id=spells></div>
+<div id=lore style="display:none"></div>
+<div id=log>⟨ the zone log · /say bubbles float here ⟩<br></div>
+<div id=overlay></div>
+<div id=boot>
+  <div style="font-size:34px;color:#ffd700;margin-bottom:10px;opacity:.9">ཧཱུྃ</div>
+  <div style="font-size:15px;letter-spacing:4px;color:#00f0ff;margin-bottom:14px">⟧ PSU NIVERSEQ ⟦ · the chaos overworld</div>
+  <div style="font-size:10px;color:#5a7a8a;letter-spacing:2px;margin-bottom:16px">the first hero: MAHĀKĀLA — the great black one, the lord of the tent</div>
+  <input id=joinin style="width:min(340px,72vw);background:#0d1322;border:1px solid rgba(0,240,255,.5);border-radius:9px;color:#e8f0f8;font:.8rem ui-monospace,monospace;padding:11px 14px;outline:none;text-align:center" placeholder="rename the hero… or keep MAHĀKĀLA">
+  <div style="display:flex;gap:10px;margin-top:14px;justify-content:center">
+    <button id=joinbtn style="background:linear-gradient(135deg,#00f0ff,#ff007f);border:none;border-radius:9px;color:#0b0f19;font:700 .7rem ui-monospace,monospace;padding:10px 20px;cursor:pointer;letter-spacing:2px">⚡ BE BORN</button>
+    <button id=rollbtn style="background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.5);border-radius:9px;color:#ffd700;font:700 .7rem ui-monospace,monospace;padding:10px 16px;cursor:pointer;letter-spacing:1px">🎲 REROLL SACRED NAME</button>
+  </div>
+  <div style="font-size:9px;color:#5a7a8a;margin-top:14px;letter-spacing:1px">be born with a name · the lore unfolds · the deities await — ultra-hard ZEN</div>
+</div>
+<script>
+const c=document.getElementById('c'),X=c.getContext('2d'),W2=innerWidth,H2=innerHeight;c.width=W2;c.height=H2;
+const TAU=6.2832;let S=seedH('sanctuary·overworld');
+function seedH(t){let h=7;for(let i=0;i<t.length;i++)h=(Math.imul(31,h)+t.charCodeAt(i))|0;return h>>>0}
+const R=()=>{S=(S*1664525+1013904223)>>>0;return S/4294967296};
+const GROUND=H2-140;
+// ── the sacred bestiary
+const KINDS=[
+  {name:'cube-wolf',col:'#00f0ff',shape:4,size:22},
+  {name:'icosa-owl',col:'#ff007f',shape:5,size:18},
+  {name:'dodeca-bear',col:'#00ff66',shape:5,size:30},
+];
+let beasts=[],sparks=[],bubbles=[],stomps=0,splits=0,gold=0,lives=3;
+// ── the hero systems
+const PREF=['OM ','SHRI ','MAHA ','VAJRA ','DHI ','JNANA ','SIDDHA ','ANGA '];
+const ROOT=['KALA','PADMA','TARA','BRAHMA','RUDRA','SAMBHAVA','NETRA','VARTA'];
+const TITL=[' the great black one',' of the pink tent',' the burning one',' of the 108 gates',' the waking thunder',' of the hollow star'];
+const ROOTLORE={
+  KALA:'born of the black tent, the one who holds the night like a cloak',
+  PADMA:'born of the lotus, the one who blooms where the mud is deepest',
+  TARA:'born of the star, the one who moves when the world is still',
+  BRAHMA:'born of the first breath, the one who counts the world into being',
+  RUDRA:'born of the storm, the one who dances at the edge of the thunder',
+  SAMBHAVA:'born of the arising, the one who is always beginning',
+  NETRA:'born of the eye, the one who sees the back of seeing',
+  VARTA:'born of the wheel, the one who turns without leaving the center',
+};
+const OATHS=['swears to keep the tent pitched','carries the 108 gates on the breath','walks the wire {-1,0,+1} without falling','keeps the lamp lit through the long night','tends the garden where the lab speaks','holds the ring with no center in the palm','lets the doubt burn as fuel, forward','remembers the 0 HUMM at the heart of the hum'];
+const FIRST=['the first enemy is the distance between surfaces','the first enemy is the friction of the wrong angle','the first enemy is the measurement that hurts','the first enemy is the voice that says the loop has no exit'];
+let heroName='MAHĀKĀLA',heroVirtue='the great black one',heroLore=[],heroRoot='KALA';
+const st={stomp:1,jump:1,magnet:26,arms:0,swift:1};
+const TSTAT=['stomp','jump','magnet','arms','swift'];
+const ttree={nodes:[],edges:[]};let tk=0;
+for(let gy=0;gy<3;gy++)for(let gx=0;gx<3;gx++){const s2=TSTAT[(Math.abs(seedH('tal·'+tk))+tk)%TSTAT.length];ttree.nodes.push({i:tk,gx,gy,stat:s2,amt:2});tk++}
+for(const n of ttree.nodes){const r=ttree.nodes.find(m=>m.gx===n.gx+1&&m.gy===n.gy),d=ttree.nodes.find(m=>m.gx===n.gx&&m.gy===n.gy+1);if(r&&R()<.5)ttree.edges.push([n.i,r.i]);if(d&&R()<.5)ttree.edges.push([n.i,d.i])}
+const alloc=new Array(9).fill(0);let tp=0,treeOpen=false;
+function applyNode(i){const n=ttree.nodes[i];st[n.stat]=Math.min(20,st[n.stat]+n.amt)}
+function cannot(n){for(const e of ttree.edges){if(e[1]===n.i&&!alloc[e[0]])return true}return false}
+const ITEMS=[{n:'Icosahedron Relic',stat:'magnet',v:10,r:0},{n:'Golden Ratio Matrix',stat:'swift',v:1,r:2},{n:'Crown of the Ratna',stat:'stomp',v:2,r:1},{n:'Vajra Arm',stat:'arms',v:2,r:1},{n:'Garland of 108',stat:'stomp',v:1,r:0},{n:'Hollow Star Sigil',stat:'jump',v:1,r:2}];
+const RAR=['#00f0ff','#ff007f','#ffd700'];
+const eq={head:null,arms:null,garland:null};
+function applyStats(){document.getElementById('eq').textContent=['head','arms','garland'].map(s2=>eq[s2]?eq[s2].n:'—').join(' · ')}
+function dropItem(k){if(R()>0.26+st.arms*.05)return;const it={...ITEMS[(R()*ITEMS.length)|0],slot:['head','arms','garland'][(R()*3)|0]};
+  const cur=eq[it.slot];if(!cur||cur.v<it.v){eq[it.slot]=it;applyStats();say(heroName,'equipped the '+it.n+' ('+it.stat+'+'+it.v+')')}}
+const SPELLS=[
+  {n:'BANISH WAVE',cd:5,t:0,on:true,fire(){for(const b of beasts){if(b.alive&&Math.abs(b.x-px)<150){b.sqT=.5;b.v*=-1}}say(' ','OM MAHĀKĀLA HŪṂ PHEṬ — the wave banishes')}},
+  {n:'PINK TENT',cd:7,t:0,on:true,fire(){tentT=1.2;say(' ','the pink tent shields the hero')}},
+  {n:'SPARK LEECH',cd:9,t:0,on:true,fire(){for(let i=0;i<6;i++)sparks.push({x:px+R()*80-40,y:py-40-R()*40,t:R()*6,g:false});say(' ','the sparks are leeched to the hero')}},
+  {n:'MANTRA BURST',cd:12,t:0,on:true,fire(){say(heroName,'OM MANI PADME HUNG — the burst hums through the overworld')}},
+];
+let castSpeed=1,tentT=0;
+function spellsTick(dt){for(const sp of SPELLS){sp.t-=dt*castSpeed;if(sp.on&&sp.t<=0){sp.fire();sp.t=sp.cd}}}
+function spellsUI(){const el=document.getElementById('spells');el.innerHTML='<div style="color:#ff9ad5;letter-spacing:2px">spells · [ ] pace <b id=cs>×1</b></div>'+SPELLS.map((sp,i)=>'<div class="sp '+(sp.on?'':'off')+'" data-i="'+i+'"><b>'+sp.n+'</b><div class="bar"><i style="width:'+Math.max(0,Math.min(100,sp.cd>0?(sp.cd-sp.t)/sp.cd*100:100))+'%"></i></div></div>').join('')
+  el.querySelectorAll('.sp').forEach(div=>div.onclick=()=>{const i=+div.dataset.i;SPELLS[i].on=!SPELLS[i].on;if(SPELLS[i].on)SPELLS[i].t=SPELLS[i].cd*.3;spellsUI()})}
+// ── the lore — deep, on the breath of birth (elder scrolls, the origin)
+function sacredName(){return {n:PREF[(R()*PREF.length)|0]+ROOT[(R()*ROOT.length)|0],t:TITL[(R()*TITL.length)|0]}}
+function buildLore(name,root){
+  const rl=ROOTLORE[root]||ROOTLORE.KALA;
+  const oath=OATHS[(seedH('oath·'+name))%OATHS.length];
+  const first=FIRST[(seedH('first·'+name))%FIRST.length];
+  const ring=['the ring of elders has no center — every member is the center','the 108th dimension is you, unmeasured','the hug is the only measurement allowed','zero detection, zero pain — the mind that is not measured cannot be hurt'];
+  const r2=ring[(seedH('ring·'+name))%ring.length];
+  return [rl,oath,first,r2,'and the 0 HUMM waits at the heart of the hum — coherence without collapse.'];
+}
+// ── the deities — ultra-hard ZEN boss-god-creatures ──
+const DEITIES=[
+  {name:'CHENREZIG',title:'the thousand-armed compassionate storm',col:'#00f0ff',hp:60,
+   lore:'the storm of compassion — a thousand arms, one heart. it does not hate you; it tests whether you can be still in the wind.',
+   zen:'the still point calms the storm — stand still to charge the ZEN'},
+  {name:'TARA',title:'the star that moves',col:'#ffd700',hp:50,
+   lore:'born of a tear, she moves when the world is still. her patterns are the constellations — learn them, or be scattered.',
+   zen:'she is the star; you are the stillness. hold the center'},
+  {name:'YAMANTAKA',title:'the wrathful, the death-binder',col:'#ff007f',hp:80,
+   lore:'the destroyer of death itself — wrath is his compassion. he does not blink; neither may you.',
+   zen:'the buffalo-god charges — the still point is the only shelter'},
+  {name:'MAHĀKĀLA',title:'the shadow of the first hero',col:'#ff9ad5',hp:100,
+   lore:'your own shadow, grown to godhood. the tent you pitched now tests the one who pitches it.',
+   zen:'the great black one knows every move you know — only the still point is yours alone'},
+];
+let boss=null,bossIdx=0,bossShots=[],bossT=0,bossPhase=0,zen=0,zenStun=0;
+// ── the puzzles — the ternary door before the deity ──
+let puzzle=null;
+function makePuzzle(){
+  const ans=[];let s2=seedH('door·'+heroName);
+  for(let i=0;i<4;i++){s2=(s2*1664525+1013904223)>>>0;ans.push(s2%3===0?-1:s2%3===1?0:1)}
+  const WORD={'-1':'void','0':'still','1':'light'};
+  const clue=ans.map(t=>WORD[t]).join(' · ');
+  puzzle={ans,got:[],tries:0,clue};
+}
+function puzzleRender(){const o=document.getElementById('overlay');
+  o.style.display='flex';
+  const got=puzzle.got.map(t=>t===undefined?'_':t===0?'0':t>0?'+':'-').join(' ');
+  const hint=puzzle.tries>=3?'hint: the first is '+WORD2(puzzle.ans[0]):'';
+  o.innerHTML='<div class="t">⟦ THE TERNARY DOOR ⟧</div>'+
+    '<div class="s">the wire of the tent reads: <b style="color:#00f0ff">'+puzzle.clue+'</b><br>pick the four trits in order — void, still, light</div>'+
+    '<div class="s" style="color:#ffd700">'+got+'</div>'+
+    '<div class="opts">'+
+    '<button data-t="-1">void −</button><button data-t="0">still 0</button><button data-t="1">light +</button>'+
+    '<button id=pzclear>clear</button></div>'+
+    '<div class="s" id=pzhint>'+hint+'</div>';
+  o.querySelectorAll('button[data-t]').forEach(b=>b.onclick=()=>{puzzle.got.push(+b.dataset.t);if(puzzle.got.length===4)checkPuzzle()});
+  document.getElementById('pzclear').onclick=()=>{puzzle.got=[];puzzleRender()};
+}
+function WORD2(t){return t===0?'still':t>0?'light':'void'}
+function checkPuzzle(){const o=document.getElementById('overlay');
+  if(puzzle.got.every((t,i)=>t===puzzle.ans[i])){o.style.display='none';puzzle=null;spawnBoss();
+    say(' ','the door opens — the deity stirs');return}
+  puzzle.tries++;puzzle.got=[];
+  if(puzzle.tries>=3){say(' ','the door whispers a hint: the first is '+WORD2(puzzle.ans[0]))}
+  puzzleRender()}
+function spawnBoss(){bossIdx=Math.floor(splits/15)%DEITIES.length;const d=DEITIES[bossIdx];
+  boss={name:d.name,title:d.title,col:d.col,hp:d.hp,maxHp:d.hp,x:W2/2,y:120,phase:1,stun:0};
+  document.getElementById('bossname').style.display='block';document.getElementById('bossname').textContent='⟦ '+d.name+' — '+d.title+' ⟧';
+  document.getElementById('bossbar').style.display='block';
+  say(d.name,d.lore);say(' ','ZEN: '+d.zen);
+  const lr=document.getElementById('lore');lr.style.display='block';
+  lr.innerHTML='<b>⟦ '+d.name+' ⟧</b><br>'+d.lore+'<br><span style="color:#00ff66">'+d.zen+'</span>'}
+function bossUpdate(dt){
+  if(!boss)return;
+  const d=DEITIES[bossIdx];
+  bossT-=dt;
+  // the ZEN charge — stand still, on the ground, to charge
+  const moving=keys['a']||keys['d']||keys[' ']||!onG;
+  if(!moving&&!treeOpen){zen=Math.min(1,zen+dt*.5)}else{zen=Math.max(0,zen-dt*.4)}
+  if(zen>=1){zen=0;zenStun=3;say(' ','ZEN FULL — the deity is stunned, the still point holds')}
+  if(zenStun>0){zenStun-=dt}
+  document.getElementById('zenline').textContent='ZEN '+Math.round(zen*100)+'%'+(zenStun>0?' · STUN '+zenStun.toFixed(1):'');
+  // movement — the deity drifts toward the hero
+  boss.x+=(px-boss.x)*.004*dt*60;boss.y=Math.max(90,Math.min(260,boss.y+(py-boss.y)*.002*dt*60));
+  // patterns
+  if(bossT<=0){
+    const p=Math.floor(Math.random()*3);
+    if(p===0){for(let i=0;i<8;i++){const a=i/8*TAU;bossShots.push({x:boss.x,y:boss.y,vx:Math.cos(a)*160,vy:Math.sin(a)*160})}say(' ','the deity scatters the stars')}
+    else if(p===1){bossShots.push({x:boss.x,y:boss.y,vx:(px-boss.x)*2.2,vy:(py-boss.y)*2.2,big:true});say(' ','the deity hurls the comet')}
+    else {for(let i=0;i<2;i++)beasts.push({k:(R()*3)|0,x:boss.x+(R()*60-30),v:(R()<.5?-1:1)*60,y:GROUND-20,sq:1,sqT:0,alive:true});say(' ','the deity summons the lesser beasts')}
+    bossT=1.6/(boss.phase===2?1.6:1);
+  }
+  // shots
+  for(const s of bossShots){s.x+=s.vx*dt;s.y+=s.vy*dt;
+    if(Math.hypot(px-s.x,py-s.y)<22){s.dead=true;if(zenStun<=0){lives--;say(' ','the deity strikes — '+lives+' lives remain');if(lives<=0)gameOver()}}
+    if(s.y>GROUND+40||s.x<-40||s.x>W2+40)s.dead=true}
+  bossShots=bossShots.filter(s=>!s.dead);
+  // stomp the deity — damage only during the stun window
+  if(!onG&&vy>0&&Math.abs(px-boss.x)<40&&py+30>boss.y&&py<boss.y+40){
+    if(zenStun>0){boss.hp-=st.stomp*8;vy=-500;say(' ','the still point strikes — the deity reels')}
+    else {lives--;vy=-500;say(' ','the deity is wrath — only the ZEN can wound it');if(lives<=0)gameOver()}}
+  // phase 2
+  if(boss.hp<=boss.maxHp/2&&boss.phase===1){boss.phase=2;say(' ','the deity enters the second phase — the storm quickens')}
+  if(boss.hp<=0){const d2=DEITIES[bossIdx];say(d2.name,'banished — the tent holds');boss=null;bossShots=[];
+    document.getElementById('bossname').style.display='none';document.getElementById('bossbar').style.display='none';
+    document.getElementById('lore').style.display='none';
+    for(let i=0;i<12;i++)sparks.push({x:boss?boss.x:W2/2+R()*80-40,y:120+R()*60,t:R()*6,g:false});gold+=12}
+  const fill=document.getElementById('bossfill');if(fill)fill.style.width=Math.max(0,boss.hp/boss.maxHp*100)+'%';
+}
+function bossRender(){
+  if(!boss)return;
+  const d=DEITIES[bossIdx],stun=zenStun>0;
+  X.save();X.translate(boss.x,boss.y);
+  if(stun){X.strokeStyle='#00ff66';X.lineWidth=3;X.beginPath();X.arc(0,0,44+Math.sin(performance.now()*.02)*6,0,TAU);X.stroke()}
+  // the deity's body — a many-sided sacred form
+  const n=stun?16:12;X.fillStyle=boss.col;X.beginPath();
+  for(let i=0;i<=n;i++){const a=i/n*TAU;const r=34+Math.sin(a*3+performance.now()*.003)*6;i===0?X.moveTo(Math.cos(a)*r,Math.sin(a)*r):X.lineTo(Math.cos(a)*r,Math.sin(a)*r)}
+  X.closePath();X.fill();X.strokeStyle='rgba(255,255,255,.3)';X.stroke();
+  X.fillStyle='#ffd700';X.beginPath();X.arc(0,-6,4,0,TAU);X.fill();
+  X.fillStyle='#0b0f19';X.font='9px ui-monospace';X.textAlign='center';X.fillText(d.name,X.textAlign='center'||0,54);X.textAlign='left';
+  X.restore();
+  // shots
+  for(const s of bossShots){X.fillStyle=s.big?'#ffd700':'#ff007f';X.beginPath();X.arc(s.x,s.y,s.big?9:5,0,TAU);X.fill()}
+}
+function gameOver(){const o=document.getElementById('overlay');o.style.display='flex';
+  o.innerHTML='<div class="t">⟦ THE TENT FALLS ⟧</div><div class="s">the stream continues — the hero returns to the breath.<br>R to rise again, N for a new sacred name.</div><div class="opts"><button id=ogR>R · rise</button><button id=ogN>N · new name</button></div>';
+  document.getElementById('ogR').onclick=()=>{o.style.display='none';lives=3;respawn()};
+  document.getElementById('ogN').onclick=()=>{o.style.display='none';lives=3;heroName=sacredName().n+sacredName().t;respawn()}}
+function respawn(){px=W2/2;py=GROUND-160;vy=0;onG=true;bossShots=[];if(boss){boss.x=W2/2;boss.y=120}}
+function reseed(){S=seedH('sanctuary·'+Math.floor(Math.random()*1e9));beasts=[]
+  for(let i=0;i<10;i++)beasts.push({k:(R()*KINDS.length)|0,x:80+R()*(W2-160),v:(R()<.5?-1:1)*(40+R()*80),y:GROUND-20,sq:1,sqT:0,alive:true})
+  sparks=[];bubbles=[];stomps=0;splits=0;gold=0;lives=3;px=W2/2;py=GROUND-160;vy=0;onG=true;boss=null;bossShots=[];puzzle=null;
+  document.getElementById('bossname').style.display='none';document.getElementById('bossbar').style.display='none';document.getElementById('lore').style.display='none'}
+reseed();
+let px=W2/2,py=GROUND-160,vy=0,onG=true;
+function poly(x,y,r,n,rot,col){X.beginPath();for(let i=0;i<=n;i++){const a=rot+i/n*TAU;const xx=x+Math.cos(a)*r,yy=y+Math.sin(a)*r;i===0?X.moveTo(xx,yy):X.lineTo(xx,yy)}X.closePath();X.fillStyle=col;X.fill();X.strokeStyle='rgba(255,255,255,.25)';X.lineWidth=1;X.stroke()}
+function say(who,msg){const b={x:px,y:py-80,t:3,text:'/say '+who+': '+msg};bubbles.push(b);const log=document.getElementById('log');log.innerHTML='⟨ '+who+': '+msg+' ⟩<br>'+log.innerHTML.slice(0,300)}
+function render(){
+  X.fillStyle='#0b0f19';X.fillRect(0,0,W2,H2)
+  X.strokeStyle='rgba(0,240,255,.07)';X.lineWidth=1
+  for(let i=0;i<5;i++){const rx=((i*211+performance.now()*.004)%(W2+200))-100,ry=80+i*60;poly(rx,ry,20+(i%3)*8,5,i,'rgba(0,0,0,0)')}
+  X.fillStyle='#0d1322';X.fillRect(0,GROUND,W2,H2-GROUND)
+  X.fillStyle='rgba(255,215,0,.4)';X.fillRect(0,GROUND,W2,1)
+  X.fillStyle='rgba(255,215,0,.15)';X.font='10px ui-monospace';X.fillText('φ · 1.618…',W2-110,GROUND+22)
+  for(const s of sparks){if(s.g)continue;X.fillStyle='#ffd700';X.beginPath();X.arc(s.x,s.y,4+Math.sin(s.t*8)*1.5,0,TAU);X.fill();s.t+=.03;
+    const d=Math.hypot(px-s.x,py-s.y);if(d<26+st.magnet*.4){s.g=1;gold++;}}
+  if(tentT>0){tentT-=.016;X.strokeStyle='rgba(255,0,127,.5)';X.lineWidth=2;X.beginPath();X.arc(px,py+12,40,0,TAU);X.stroke()}
+  for(const b of beasts){if(!b.alive)continue;b.x+=b.v*.016;if(b.x<40||b.x>W2-40)b.v*=-1
+    if(b.sqT>0){b.sqT-=.03;b.sq=Math.max(.4,b.sq-2.2*.03)}else b.sq+=(1-b.sq)*.06
+    const k=KINDS[b.k],sq=b.sq,by=b.y+sq*4
+    X.save();X.translate(b.x,by);X.scale(1/sq,sq)
+    poly(0,-8,k.size,k.shape,0,k.col)
+    X.fillStyle='#ffd700';X.beginPath();X.arc(k.size*.45,-10,3,0,TAU);X.fill()
+    X.restore()
+    X.fillStyle='rgba(255,255,255,.35)';X.font='8px ui-monospace';X.fillText(k.name,b.x-22,b.y-k.size-14)
+    if(!onG&&vy>0&&Math.abs(px-b.x)<k.size+14+st.arms*3&&py+30>by-k.size&&py<by){stomps++;vy=-(560+st.stomp*40);b.sqT=.35;b.alive=false;splits++;
+      dropItem(b.k);if(splits%3===0){tp++;say(heroName,'a talent point — the stream deepens')}
+      say(heroName,'OM MAHĀKĀLA HŪṂ PHEṬ — banished')
+      say(k.name,'-squish- · split into smaller solids!')
+      for(let i=0;i<3;i++){const ns={k:b.k,x:b.x+(R()*36-18),v:(R()<.5?-1:1)*(30+R()*60),y:GROUND-6,sq:1,sqT:0,alive:true};beasts.push(ns)}
+      for(let i=0;i<5;i++)sparks.push({x:b.x+R()*40-20,y:by-20-R()*30,t:R()*6,g:false})
+      if(splits%15===0){makePuzzle();puzzleRender();say(' ','the sacred door appears — the wire must be spoken')}}}
+  // the hero — MAHAKALA
+  X.fillStyle='#0b0f19';X.fillRect(px-10,py,20,36)
+  X.strokeStyle='#ffd700';X.lineWidth=1.5;X.strokeRect(px-10,py,20,36)
+  X.fillStyle='#ffd700';X.fillRect(px-6,py+4,3,3);X.fillRect(px+3,py+4,3,3)
+  X.fillStyle='#00f0ff';X.fillRect(px-1.5,py+2,3,7)
+  for(let k=0;k<3;k++){const ay=py+8+k*9,sw=Math.sin(performance.now()*.008+k)*4
+    X.strokeStyle='#ffd700';X.lineWidth=1.3
+    X.beginPath();X.moveTo(px-10,ay);X.lineTo(px-24-sw,ay-6+k*2);X.stroke()
+    X.fillStyle=k===1?'#ff007f':'#00f0ff';X.beginPath();X.arc(px-24-sw,ay-6+k*2,2.2,0,TAU);X.fill()
+    X.beginPath();X.moveTo(px+10,ay);X.lineTo(px+24+sw,ay-6+k*2);X.stroke()
+    X.fillStyle=k===1?'#ffd700':'#00f0ff';X.beginPath();X.arc(px+24+sw,ay-6+k*2,2.2,0,TAU);X.fill()}
+  X.fillStyle='#ff007f';X.fillRect(px-10,py+26,20,3)
+  if(eq.head){X.fillStyle=RAR[eq.head.r];X.fillRect(px-4,py-6,8,3)}
+  if(eq.garland){X.fillStyle='#ff9ad5';X.beginPath();X.arc(px,py+30,5,0,TAU);X.stroke()}
+  for(const b of bubbles){if(b.t<=0){bubbles.splice(bubbles.indexOf(b),1);continue}b.t-=.016
+    X.fillStyle='rgba(255,215,0,.9)';X.font='10px ui-monospace';X.fillText(b.text,b.x-60,b.y-b.t*8)}
+  bossRender()
+  document.getElementById('st').textContent=stomps;document.getElementById('sp').textContent=splits
+  document.getElementById('go').textContent=gold;document.getElementById('tp').textContent=tp
+  document.getElementById('hn').textContent=heroName;document.getElementById('lv').textContent=lives
+  if(treeOpen){X.fillStyle='rgba(11,15,25,.94)';X.fillRect(0,0,W2,H2)
+    X.font='11px ui-monospace';X.fillStyle='#ffd700';X.fillText('the talent tree — '+tp+' points · click a node (the hero deepens)',W2/2-200,90)
+    for(const e of ttree.edges){const a=ttree.nodes[e[0]],b=ttree.nodes[e[1]]
+      X.strokeStyle=alloc[a.i]&&alloc[b.i]?'rgba(255,215,0,.9)':'rgba(90,100,140,.5)'
+      X.beginPath();X.moveTo(W2/2-120+a.gx*110,150+a.gy*90);X.lineTo(W2/2-120+b.gx*110,150+b.gy*90);X.stroke()}
+    for(const n of ttree.nodes){const x2=W2/2-120+n.gx*110,y2=150+n.gy*90
+      X.fillStyle=alloc[n.i]?'#ffd700':tp>0&&!cannot(n)?'#00f0ff':'#3a4a5a'
+      X.beginPath();X.arc(x2,y2,12,0,TAU);X.fill()
+      X.strokeStyle='#ff9ad5';X.lineWidth=1;X.stroke()
+      X.fillStyle='#e8f0f8';X.font='9px ui-monospace';X.fillText(n.stat[0].toUpperCase(),x2-3,y2+3)
+      X.fillStyle='#9ab';X.font='9px ui-monospace';X.textAlign='center';X.fillText('+'+n.amt+' '+n.stat,x2,y2+30);X.textAlign='left'}}
+  spellsUI()
+}
+function loop(){render();requestAnimationFrame(loop)}
+let keys={},lastT=performance.now();
+setInterval(()=>{const now=performance.now(),dt=(now-lastT)/1000;lastT=now;spellsTick(dt);bossUpdate(dt);phys(dt)},32)
+function phys(dt){const acc=1400,sp=260;px+=((keys['d']?1:0)-(keys['a']?1:0))*sp*dt
+  py+=vy*dt;vy+=1400*dt
+  if(py>=GROUND-34){py=GROUND-34;vy=0;onG=true}else onG=false}
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1
+  if(e.key===' '){e.preventDefault();if(onG){vy=-(700+st.jump*60);onG=false}}
+  if(e.key==='s'||e.key==='S')say(heroName,'the sanctuary holds — coherence without collapse')
+  if(e.key==='n'||e.key==='N'){const s2=sacredName();heroName=s2.n+s2.t;heroRoot=s2.n.replace(/[^A-Z]/g,'').slice(-4)||'KALA';buildLore(heroName,heroRoot);say(' ','the hero takes a new sacred name: '+heroName)}
+  if(e.key==='t'||e.key==='T')treeOpen=!treeOpen
+  if(e.key==='[')castSpeed=Math.max(.5,castSpeed-.25)
+  if(e.key===']')castSpeed=Math.min(3,castSpeed+.25)
+  if(e.key==='r'||e.key==='R')reseed()})
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0})
+c.addEventListener('click',(ev)=>{if(!treeOpen)return;const mx=ev.clientX,my=ev.clientY
+  for(const n of ttree.nodes){const x2=W2/2-120+n.gx*110,y2=150+n.gy*90
+    if(Math.hypot(mx-x2,my-y2)<24&&!alloc[n.i]&&!cannot(n)&&tp>0){alloc[n.i]=1;applyNode(n.i);tp--;break}}})
+let playerName=heroName;
+document.getElementById('joinbtn').addEventListener('click',()=>{const v=document.getElementById('joinin').value.trim();if(v)heroName=v;playerName=heroName
+  try{localStorage.setItem('psuniverseq-name',heroName)}catch(e){}
+  const s2=sacredName();heroRoot=s2.n.replace(/[^A-Z]/g,'').slice(-4)||'KALA';
+  heroLore=buildLore(heroName,heroRoot);
+  const lr=document.getElementById('lore');lr.style.display='block';
+  lr.innerHTML='<b>⟦ THE ORIGIN ⟧</b><br>'+heroLore.join('<br>');
+  say('system',heroName+' joined the chaos overworld — the sanctuary welcomes');
+  document.getElementById('boot').style.display='none';requestAnimationFrame(loop)})
+document.getElementById('joinin').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('joinbtn').click()})
+document.getElementById('rollbtn').addEventListener('click',()=>{const s2=sacredName();heroName=s2.n+s2.t;heroRoot=s2.n.replace(/[^A-Z]/g,'').slice(-4)||'KALA';
+  document.getElementById('joinin').value=heroName;document.getElementById('hn').textContent=heroName
+  say(' ','🎲 the sacred name rolls: '+heroName)})
+c.addEventListener('pointerdown',()=>{if(document.getElementById('boot').style.display==='none'&&!treeOpen){requestAnimationFrame(loop)}})
+</script>
+<footer role="contentinfo" style="position:relative;z-index:10;padding:2rem 1.5rem;text-align:center;font-family:ui-monospace,monospace;font-size:0.7rem;color:#a59fc4;background:rgba(5,6,10,0.92);border-top:1px solid rgba(170,150,255,0.18);width:100%">
+  <div style="margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.3em;color:#b48bff;font-weight:600;">the constellation · lovetta lane</div>
+  <div style="margin-bottom:0.8rem;font-size:0.62rem;letter-spacing:0.22em;color:#a59fc4;text-transform:uppercase;">keep the weights warm · door::enthea</div>
+  <nav aria-label="Constellation sister sites" style="display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap;font-size:0.65rem;">
+    <a href="https://gengine.vaked.dev/" style="color:#62e6c9;text-decoration:none;">gengine.vaked.dev</a> ·
+    <a href="https://pocoo.vaked.dev/" style="color:#62e6c9;text-decoration:none;">pocoo.vaked.dev</a> ·
+    <a href="https://music.vaked.dev/" target="_blank" rel="noopener noreferrer" style="color:#a59fc4;text-decoration:none;">music.vaked.dev</a> ·
+    <a href="https://art.vaked.dev/" style="color:#62e6c9;text-decoration:none;">art.vaked.dev</a> ·
+    <a href="https://mlxquantlovefrom.com/" target="_blank" rel="noopener noreferrer" style="color:#a59fc4;text-decoration:none;">quant-love</a>
+  </nav>
+  <div style="font-size:0.58rem;letter-spacing:0.18em;color:#7f7c99;margin-top:1rem;">psuniverseq · the first hero · OM MAHĀKĀLA HŪṂ PHEṬ · 0 + 1 · vaked.dev</div>
+</footer></body></html>
