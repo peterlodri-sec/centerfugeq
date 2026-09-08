@@ -28,11 +28,11 @@ import {
 const __dir = dirname(fileURLToPath(import.meta.url))
 const OUT = join(__dir, '..', 'out')
 
-const MODALITIES = ['game', 'video', 'image', 'tensor'] as const
+const MODALITIES = ['game', 'video', 'image', 'tensor', 'scene'] as const
 type Modality = (typeof MODALITIES)[number]
 
 function usage(): never {
-  console.error('usage: node gen.ts <game|video|image|tensor> "<brief>" [--frames N] [--entities N] [--rows R --cols C]')
+  console.error('usage: node gen.ts <game|video|image|tensor|scene> "<brief>" [--frames N] [--entities N] [--rows R --cols C]')
   process.exit(1)
 }
 
@@ -42,11 +42,13 @@ function main(): void {
   let entities = 6
   let rows = 4
   let cols = 8
+  let width = 16
   for (let i = 0; i < rest.length; i++) {
     if (rest[i] === '--frames') frames = Number(rest[++i])
     if (rest[i] === '--entities') entities = Number(rest[++i])
     if (rest[i] === '--rows') rows = Number(rest[++i])
     if (rest[i] === '--cols') cols = Number(rest[++i])
+    if (rest[i] === '--width') width = Number(rest[++i])
   }
   if (!modArg || !brief || !(MODALITIES as readonly string[]).includes(modArg)) usage()
 
@@ -61,6 +63,9 @@ function main(): void {
     payload = { frames: composeVideo(seed, frames) }
   } else if (modality === 'game') {
     payload = composeGame(seed, entities)
+  } else if (modality === 'scene') {
+    // the export lane: a game board + width → scene_builder.ts → Blender EEVEE.
+    payload = { board: composeGame(seed, entities).board, width }
   } else {
     const t = b158Weights(seed, rows, cols)
     payload = {
