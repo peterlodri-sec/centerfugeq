@@ -34,7 +34,10 @@ body:has(#overlay[style*="flex"]) #hud{filter:blur(2px);opacity:.4}
 const c=document.getElementById('c'),X=c.getContext('2d'),W2=innerWidth,H2=innerHeight;c.width=W2;c.height=H2;
 const TAU=6.2832;const TS=48,CAM_W=Math.ceil(W2/TS)+2;
 const GROUND=13;
-let S=seedH('marioq·overworld');
+// the engine manifest — injected by `gen.ts marioq`; direct-open falls back
+// to the local seed stream (try/catch: the literal stays when not substituted)
+const M=(()=>{try{return __MANIFEST__}catch{return null}})();
+let S=M?seedH('marioq·'+M.seed_line):seedH('marioq·overworld');
 function seedH(t){let h=7;for(let i=0;i<t.length;i++)h=(Math.imul(31,h)+t.charCodeAt(i))|0;return h>>>0}
 const R=()=>{S=(S*1664525+1013904223)>>>0;return S/4294967296};
 function trit(){S=(S*1664525+1013904223)>>>0;return (S%3===0?-1:S%3===1?0:1)} // the ternary stream
@@ -44,22 +47,24 @@ const GLYPH={'-1':'-','0':'0','1':'+'}
 const LEN=220;
 let lvl=[],blocks=[],gifts=[],coins=[],fauna=[],flagX=0,seedStr='';
 function buildLevel(){
-  S=seedH('marioq·'+seedStr); // seedStr set by reseed
+  S=seedH('marioq·'+(M?M.seed_line:'')+'·'+seedStr); // the engine seed pours into the stream
   lvl=[];blocks=[];gifts=[];coins=[];fauna=[];
   for(let x=0;x<LEN;x++){
-    const t=trit();
+    // the first 64 tiles ARE the engine's composed board — the manifest's law
+    const t=(M&&M.board&&x<M.board.length)?M.board[x]:trit();
     lvl[x]={t};
     // ground everywhere except seeded pits
     const pit=t===-1?Math.random()<0.16:false;
     lvl[x].pit=pit;
-    // upper decoration from the same trit stream
-    const d1=R(),d2=R();
+    // the world field drives the decoration cadence when the engine speaks
+    const w=(M&&M.world&&x<M.world.length)?M.world[x]:0;
+    const d1=w>0?0.18:R(),d2=w<0?0.10:R();
     if(!pit&&d1<0.22)blocks.push({x,y:9,id:x*3});
     else if(!pit&&d2<0.10)gifts.push({x,y:8,t:trit()>0?1:-1});
     if(!pit&&R()<0.10)coins.push({x,y:6+Math.floor(R()*3)});
   }
   // the gift blocks hold coins; the fauna marches in; the flag stands at the end
-  for(let x=28;x<LEN-6;x+=7+Math.floor(R()*5))fauna.push({x,y:GROUND-1,v:(R()<0.5?-1:1)*(40+40*R()),t:seedH('fauna·'+x)+1});
+  for(let x=28;x<LEN-6;x+=7+Math.floor(R()*5))fauna.push({x,y:GROUND-1,v:(R()<0.5?-1:1)*(40+40*R()),t:seedH('fauna·'+x)+1,name:(M&&M.roster&&M.roster.length)?M.roster[Math.floor(x/7)%M.roster.length].name:null});
   flagX=LEN-5;
   // stairs to the flag
   for(let k=0;k<4;k++)for(let i=0;i<4-k;i++)blocks.push({x:flagX-5+k,y:GROUND-1-i,id:100+k*4+i});
@@ -68,7 +73,7 @@ function reseed(){
   seedStr=Math.floor(Math.random()*1e9).toString(16);
   buildLevel();
   px=TS*2;py=GROUND*TS-TS*1.05;vx=0;vy=0;onG=true;dead=false;win=false;coinN=0;winShown=false;
-  document.getElementById('seed').textContent='seed 0x'+seedStr;
+  document.getElementById('seed').textContent='seed '+((M?'·'+M.seed_line:'0x')+seedStr);
   document.getElementById('wire').textContent='the wire · '+Array.from({length:48},(_,i)=>GLYPH[lvl[i].t]).join(' ');
   document.getElementById('overlay').style.display='none';
 }
@@ -153,7 +158,7 @@ function draw(){
   // coins — the golden circles
   for(const co of coins){if(co.f){co.f+=.03}X.fillStyle='#ffd700';X.beginPath();X.arc(co.x*TS+TS/2,co.y*TS+TS/2+Math.sin(co.f||0)*4,9,0,TAU);X.fill()}
   // fauna — the squishables (the original's shape, squared by the engine)
-  for(const f of fauna){X.fillStyle=f.t%2?'#ff007f':'#00ff66';poly(f.x,f.y*TS+TS*.7,14,3,0,X.fillStyle);X.fillStyle='#e8d8c8';X.fillRect(f.x+6,f.y*TS+19,5,5);X.fillRect(f.x+16,f.y*TS+19,5,5)}
+  for(const f of fauna){X.fillStyle=f.t%2?'#ff007f':'#00ff66';poly(f.x,f.y*TS+TS*.7,14,3,0,X.fillStyle);X.fillStyle='#e8d8c8';X.fillRect(f.x+6,f.y*TS+19,5,5);X.fillRect(f.x+16,f.y*TS+19,5,5);if(f.name){X.fillStyle='rgba(232,216,200,.6)';X.font='8px ui-monospace';X.textAlign='center';X.fillText(f.name,f.x+TS/2,f.y*TS-4);X.textAlign='left'}}
   // the flag — the goal, at the end of the wire
   X.fillStyle='rgba(0,240,255,.15)';X.fillRect(flagX*TS,GROUND*TS-TS*6+((win?1:0)*TS*6),2,TS*6);
   X.fillStyle='#00f0ff';X.fillRect(flagX*TS+2,GROUND*TS-TS*6+(win?TS*6:0),TS*1.3,TS*0.8);

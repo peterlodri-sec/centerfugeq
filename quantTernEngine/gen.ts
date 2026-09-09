@@ -10,7 +10,7 @@
 // artifact can be replayed by any renderer (entheai fan-out, Blender
 // suite, the ledger) from the line alone.
 
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -28,7 +28,7 @@ import {
 const __dir = dirname(fileURLToPath(import.meta.url))
 const OUT = join(__dir, '..', 'out')
 
-const MODALITIES = ['game', 'video', 'image', 'tensor', 'scene'] as const
+const MODALITIES = ['game', 'video', 'image', 'tensor', 'scene', 'marioq'] as const
 type Modality = (typeof MODALITIES)[number]
 
 function usage(): never {
@@ -62,6 +62,10 @@ function main(): void {
   } else if (modality === 'video') {
     payload = { frames: composeVideo(seed, frames) }
   } else if (modality === 'game') {
+    payload = composeGame(seed, entities)
+  } else if (modality === 'marioq') {
+    // the ternary-world floor: the engine composes the board + the roster,
+    // and this CLI renders the playable floor — engine e2e, one command
     payload = composeGame(seed, entities)
   } else if (modality === 'scene') {
     // the export lane: a game board + width → scene_builder.ts → Blender EEVEE.
@@ -98,6 +102,30 @@ function main(): void {
   writeFileSync(file, JSON.stringify(manifest, replacer, 2))
   console.log(`⟦${line}⟧`)
   console.log(`manifest: ${file}`)
+
+  if (modality === 'marioq') {
+    // render the playable floor from the engine's own data — the template
+    // substitutes __MANIFEST__ with the composed board/world/roster
+    const template = readFileSync(
+      new URL('../quantGame/marioq.html', import.meta.url).pathname,
+      'utf8',
+    )
+    const g = payload as { board: number[]; world: number[]; roster: { id: number; name: string }[] }
+    const engine = {
+      seed: '0x' + seed.toString(16),
+      seed_line: line,
+      board: g.board,
+      world: g.world,
+      roster: g.roster,
+    }
+    const html = template.replace(
+      'const M = __MANIFEST__;',
+      `const M = ${JSON.stringify(engine)};`,
+    )
+    const outHtml = join(OUT, `marioq-0x${seed.toString(16).slice(0, 12)}.html`)
+    writeFileSync(outHtml, html)
+    console.log(`floor:   ${outHtml}`)
+  }
 }
 
 main()
