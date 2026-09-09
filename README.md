@@ -10,6 +10,8 @@ centerfugeq/
 ├── quantTernEngine/        the ternary {-1, 0, +1} generation engine
 │   ├── tern.ts             seeds → trits → PRNG → wire (dependency-free)
 │   ├── gen.ts              CLI: game | video | image | tensor from one brief
+│   ├── gaia.ts             the world-memory: one seed, eight layers (weather,
+│   │                       entropy, gravity, wind, temp, light, memory)
 │   ├── spark.ts            the first spark core: the same inputs, the same map
 │   └── package.json
 ├── demos/                  NEON CITY 42 — the flying android, the first demo
@@ -57,6 +59,7 @@ alone — the same artifact, every machine, every time.
 node quantTernEngine/gen.ts image  "the pink tent at dawn"
 node quantTernEngine/gen.ts video  "komorebi through the fold" --frames 12
 node quantTernEngine/gen.ts game   "the keeper of the 108 gates" --entities 8
+node quantTernEngine/gaia.ts "sanctuary·overworld" 86400   # the field at tick 86400
 node quantTernEngine/gen.ts tensor "om mani padme hung humm" --rows 4 --cols 8
 ```
 
