@@ -9,7 +9,8 @@ centerfugeq/
 │   └── (index.html · dashboard.css · dashboard.js · data.json)
 ├── quantTernEngine/        the ternary {-1, 0, +1} generation engine
 │   ├── tern.ts             seeds → trits → PRNG → wire (dependency-free)
-│   ├── gen.ts              CLI: game | video | image | tensor from one brief
+│   ├── gen.ts              CLI: game | video | image | tensor | marioq | son-go-ku
+│   │                       from one brief
 │   ├── gaia.ts             the world-memory: one seed, eight layers (weather,
 │   │                       entropy, gravity, wind, temp, light, memory)
 │   ├── spark.ts            the first spark core: the same inputs, the same map
@@ -19,6 +20,10 @@ centerfugeq/
 ├── game/                   SUPER PADME BROS. — the buddhist platformer
 │   └── super-padme-bros.html (the engine inline, 4 gates × 27 malas = 108)
 ├── quantGame/              galaxy formation as a game engine
+│   ├── son-go-ku-floor.html  the training yard — SON GOKU trains, fists
+│   │                       with Krillin and Piccolo, laps fold the strength,
+│   │                       and the heart lane opens when Chi-Chi stands at
+│   │                       her seeded tile ("a promise is a promise")
 │   ├── halo.ts              the vector dark matter halo — polarization dynamics
 │   ├── ising.ts             2D Ising lattice, image-statistic complexity
 │   ├── galaxy.ts            the coupling: wells → bias → stars

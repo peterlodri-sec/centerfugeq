@@ -1,0 +1,51 @@
+name: release
+
+# Tag a release (v0.X.Y) and the floors + the ternary engine ship as a
+# GitHub Release bundle (zip): quantGame floors + the gen engine + the
+# harness + the docs index, for every platform-agnostic consumer.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: assemble the floors bundle
+        run: |
+          mkdir -p dist/centerfugeq-${GITHUB_REF_NAME}
+          cp quantGame/*.html quantTernEngine/*.js quantTernEngine/*.ts scripts/check-floors.mjs dist/centerfugeq-${GITHUB_REF_NAME}/ 2>/dev/null || true
+          cp README.md CHANGELOG.md SEMVER.md dist/centerfugeq-${GITHUB_REF_NAME}/ 2>/dev/null || true
+          (cd dist && zip -r "centerfugeq-${GITHUB_REF_NAME}.zip" "centerfugeq-${GITHUB_REF_NAME}")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle
+          path: dist/*.zip
+          if-no-files-found: error
+  publish:
+    needs: bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: changelog (conventional, since the last tag)
+        id: changelog
+        run: |
+          PREV="$(git tag --sort=-v:refname | sed -n 2p)"
+          RANGE="${PREV:+$PREV..}HEAD"
+          body="## v${{ github.ref_name }}
+          $(git log --no-merges --format='%s' "$RANGE" | sed 's/^/- /' | head -60)"
+          printf '%b' "$body" > changelog.md
+          echo "body-file=changelog.md" >> "$GITHUB_OUTPUT"
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          body_path: ${{ steps.changelog.outputs.body-file }}

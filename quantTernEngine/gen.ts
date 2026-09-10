@@ -28,7 +28,7 @@ import {
 const __dir = dirname(fileURLToPath(import.meta.url))
 const OUT = join(__dir, '..', 'out')
 
-const MODALITIES = ['game', 'video', 'image', 'tensor', 'scene', 'marioq'] as const
+const MODALITIES = ['game', 'video', 'image', 'tensor', 'scene', 'marioq', 'son-go-ku'] as const
 type Modality = (typeof MODALITIES)[number]
 
 function usage(): never {
@@ -67,6 +67,15 @@ function main(): void {
     // the ternary-world floor: the engine composes the board + the roster,
     // and this CLI renders the playable floor — engine e2e, one command
     payload = composeGame(seed, entities)
+  } else if (modality === 'son-go-ku') {
+    // the training yard: the engine's cast, wearing the DBZ names — the
+    // heart lane keeps the roster's seeded love/harm, Goku included
+    const base = composeGame(seed, 4)
+    const CAST = ['GOKU', 'CHI-CHI', 'KRILLIN', 'PICCOLO']
+    payload = {
+      ...base,
+      roster: base.roster.map((e, i) => ({ ...e, name: CAST[i % CAST.length] })),
+    }
   } else if (modality === 'scene') {
     // the export lane: a game board + width → scene_builder.ts → Blender EEVEE.
     payload = { board: composeGame(seed, entities).board, width }
@@ -123,6 +132,28 @@ function main(): void {
       `const M = ${JSON.stringify(engine)};`,
     )
     const outHtml = join(OUT, `marioq-0x${seed.toString(16).slice(0, 12)}.html`)
+    writeFileSync(outHtml, html)
+    console.log(`floor:   ${outHtml}`)
+  }
+
+  if (modality === 'son-go-ku') {
+    const template = readFileSync(
+      new URL('../quantGame/son-go-ku-floor.html', import.meta.url).pathname,
+      'utf8',
+    )
+    const g = payload as { board: number[]; world: number[]; roster: { id: number; name: string }[] }
+    const engine = {
+      seed: '0x' + seed.toString(16),
+      seed_line: line,
+      board: g.board,
+      world: g.world,
+      roster: g.roster,
+    }
+    const html = template.replace(
+      'const M = __MANIFEST__;',
+      `const M = ${JSON.stringify(engine)};`,
+    )
+    const outHtml = join(OUT, `son-go-ku-0x${seed.toString(16).slice(0, 12)}.html`)
     writeFileSync(outHtml, html)
     console.log(`floor:   ${outHtml}`)
   }
